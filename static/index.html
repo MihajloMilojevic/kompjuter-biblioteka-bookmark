@@ -550,6 +550,10 @@ select {
         <span class="icon">✗</span> Nije za mene
         <span class="badge" id="nb-nisam">0</span>
       </button>
+      <button class="nav-item" id="nav-bez" onclick="showView('bez')">
+        <span class="icon">⬜</span> Bez taga
+        <span class="badge" id="nb-bez">0</span>
+      </button>
     </div>
 
     <div class="nav-section">
@@ -620,6 +624,22 @@ select {
       <div class="view" id="view-dodaj">
         <div class="add-panel">
           <h2>➕ Dodaj novu knjigu</h2>
+
+          <!-- URL fetch -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:18px">
+            <div style="font-size:.78rem;color:var(--text3);margin-bottom:8px;font-weight:600;letter-spacing:.04em">PREUZMI PODATKE SA URL-A</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="url" id="fetch-url-in"
+                placeholder="https://knjige.kombib.rs/naziv-knjige"
+                style="flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;color:var(--text);font-size:.85rem"
+                onkeydown="if(event.key==='Enter') fetchFromUrl()">
+              <button class="btn btn-gold" onclick="fetchFromUrl()" id="fetch-url-btn" style="white-space:nowrap">
+                <span id="fetch-url-icon">🔍</span> Preuzmi
+              </button>
+            </div>
+            <div id="fetch-url-status" style="font-size:.75rem;margin-top:6px;display:none"></div>
+          </div>
+
           <div class="form-grid">
             <div class="form-group full">
               <label>Naslov *</label>
@@ -710,11 +730,15 @@ https://knjige.kombib.rs/osnove-vestacke-inteligencije"></textarea>
           <h2>🔄 Osvežavanje baze knjiga</h2>
           <p>Izaberi oblasti koje želiš da scrapu-ješ ili pokreni sve odjednom. Preskočiće knjige sa oznakom "Predlog za prevod".</p>
 
+          <div style="font-size:.78rem;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:.04em">OBLASTI</div>
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
             <button class="btn btn-outline" style="font-size:.75rem" onclick="checkAllAreas(true)">Odaberi sve</button>
             <button class="btn btn-outline" style="font-size:.75rem" onclick="checkAllAreas(false)">Poništi sve</button>
           </div>
           <div class="area-grid" id="area-grid"></div>
+
+          <div style="font-size:.78rem;color:var(--green2);margin:14px 0 6px;font-weight:600;letter-spacing:.04em">SPECIJALNE KOLEKCIJE</div>
+          <div class="area-grid" id="special-grid"></div>
 
           <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-gold" id="start-btn" onclick="startScrape()">▶ Pokreni scraping</button>
@@ -822,6 +846,8 @@ let currentView = 'sve';
 let editingNote = null;
 let scrapeTimer = null;
 let areas = [];
+let specialCollections = [];
+let fetchedExistingId = null;
 
 // ═══════════════════════════════════════════
 // API HELPERS
@@ -843,7 +869,9 @@ async function api(path, opts={}) {
 // INIT
 // ═══════════════════════════════════════════
 async function init() {
-  areas = await api('/areas') || [];
+  const areasRes = await api('/areas') || {};
+  areas = areasRes.areas || areasRes || [];
+  specialCollections = areasRes.special || [];
   populateAreaSelects();
   await loadBooks();
   await loadStats();
@@ -855,15 +883,18 @@ async function loadBooks() {
   const oblast = document.getElementById('oblast-filter').value;
   let url = '/books?';
   if (q) url += `q=${encodeURIComponent(q)}&`;
-  if (currentView !== 'sve' && ['imam','zanima','procitana','nisam'].includes(currentView))
+  if (['imam','zanima','procitana','nisam'].includes(currentView))
     url += `status=${currentView}&`;
   if (oblast) url += `oblast=${encodeURIComponent(oblast)}&`;
 
   const res = await api(url);
   if (!res) return;
-  allBooks = res.books || [];
+  let fetched = res.books || [];
+  if (currentView === 'bez') fetched = fetched.filter(b => !b.status);
+  allBooks = fetched;
   renderBooks();
   updateNavBadges(res);
+  populateOblastiFromBooks(res.books || []);
 }
 
 async function loadStats() {
@@ -876,6 +907,8 @@ async function loadStats() {
     if (el) el.textContent = statuses[b] || 0;
   });
   document.getElementById('nb-sve').textContent = s.ukupno || 0;
+  const nbBez = document.getElementById('nb-bez');
+  if (nbBez) nbBez.textContent = s.bez_statusa || 0;
 
   // Stats bar
   document.getElementById('stats-bar').innerHTML = `
@@ -884,6 +917,7 @@ async function loadStats() {
     <div class="stat"><div class="stat-num">${statuses.zanima||0}</div><div class="stat-lbl">Zanima me</div></div>
     <div class="stat"><div class="stat-num">${statuses.procitana||0}</div><div class="stat-lbl">Pročitane</div></div>
     <div class="stat"><div class="stat-num">${s.na_akciji||0}</div><div class="stat-lbl">Na akciji</div></div>
+    <div class="stat"><div class="stat-num">${s.bez_statusa||0}</div><div class="stat-lbl">Bez taga</div></div>
     <div class="stat"><div class="stat-num">${s.rucno_dodato||0}</div><div class="stat-lbl">Ručno dodato</div></div>
   `;
 
@@ -900,26 +934,60 @@ function updateNavBadges(res) {
 }
 
 function populateAreaSelects() {
-  const sel = document.getElementById('oblast-filter');
+  // Oblast filter dropdown — populate from known areas (sorted)
+  const sel  = document.getElementById('oblast-filter');
   const fsel = document.getElementById('f-oblast');
-  areas.forEach(a => {
-    const o1 = new Option(a.name, a.name);
-    const o2 = new Option(a.name, a.name);
-    sel.appendChild(o1);
-    if (fsel) fsel.appendChild(o2);
+  const names = areas.map(a => a.name).sort((a,b) => a.localeCompare(b,'sr'));
+  names.forEach(name => {
+    sel.appendChild(new Option(name, name));
+    if (fsel) fsel.appendChild(new Option(name, name));
   });
-  // Add "Ostalo" option for manual form
   if (fsel) fsel.appendChild(new Option('Ostalo','Ostalo'));
 
   // Area checkboxes for scraping
   const grid = document.getElementById('area-grid');
   if (grid) {
-    grid.innerHTML = areas.map(a => `
+    const sorted = [...areas].sort((a,b) => a.name.localeCompare(b.name,'sr'));
+    grid.innerHTML = sorted.map(a => `
       <label class="area-check">
         <input type="checkbox" value="${a.id}" checked class="area-cb"> ${a.name}
       </label>
     `).join('');
   }
+
+  // Special collection checkboxes
+  const sgrid = document.getElementById('special-grid');
+  if (sgrid && specialCollections.length) {
+    sgrid.innerHTML = specialCollections.map(s => `
+      <label class="area-check" style="background:#0f1a10;border-color:#1a3020">
+        <input type="checkbox" value="${s.slug}" checked class="special-cb"> ${s.name}
+      </label>
+    `).join('');
+  }
+}
+
+function populateOblastiFromBooks(books) {
+  // After loading books, refresh oblast filter with actual values found in DB
+  // (handles categories not in sidebar, e.g. special collections)
+  const sel = document.getElementById('oblast-filter');
+  const current = sel.value;
+  const known = new Set([...sel.options].map(o => o.value).filter(Boolean));
+  const fromBooks = new Set();
+  books.forEach(b => {
+    (b.oblasti || (b.oblast ? [b.oblast] : [])).forEach(o => { if (o) fromBooks.add(o); });
+  });
+  fromBooks.forEach(name => {
+    if (!known.has(name)) {
+      sel.appendChild(new Option(name, name));
+    }
+  });
+  if (current) sel.value = current;
+}
+
+function filterByOblast(name) {
+  const sel = document.getElementById('oblast-filter');
+  sel.value = name;
+  loadBooks();
 }
 
 // ═══════════════════════════════════════════
@@ -987,7 +1055,8 @@ function cardHTML(b) {
       <div class="card-badges">
         ${b.godina?`<span class="badge b-year">${b.godina}</span>`:''}
         ${b.strane?`<span class="badge b-pages">${b.strane} str.</span>`:''}
-        <span class="badge b-area">${b.oblast||''}</span>
+        ${(b.oblasti && b.oblasti.length ? b.oblasti : (b.oblast ? [b.oblast] : []))
+            .map(o => `<span class="badge b-area" style="cursor:pointer" onclick="filterByOblast('${o.replace(/'/g,"\\'")}') " title="Filtriraj po: ${o.replace(/"/g,'&quot;')}">${o}</span>`).join('')}
         ${b.akcija?`<span class="badge b-akcija">🔥 Akcija</span>`:''}
         ${b.izvor==='manual'?`<span class="badge b-manual">✏️ Ručno</span>`:''}
       </div>
@@ -1041,6 +1110,80 @@ async function saveNote(id) {
 // ═══════════════════════════════════════════
 // ADD BOOK
 // ═══════════════════════════════════════════
+async function fetchFromUrl() {
+  const url = document.getElementById('fetch-url-in').value.trim();
+  if (!url) { toast('Unesi URL knjige'); return; }
+
+  const btn    = document.getElementById('fetch-url-btn');
+  const icon   = document.getElementById('fetch-url-icon');
+  const status = document.getElementById('fetch-url-status');
+
+  btn.disabled = true;
+  icon.textContent = '⏳';
+  status.style.display = 'none';
+
+  const res = await api('/fetch-book', {
+    method: 'POST',
+    body: JSON.stringify({ url })
+  });
+
+  btn.disabled = false;
+  icon.textContent = '🔍';
+
+  if (!res || res.error) {
+    status.textContent = '❌ ' + (res?.error || 'Greška pri učitavanju');
+    status.style.color = 'var(--red2)';
+    status.style.display = 'block';
+    return;
+  }
+
+  // Popuni formu
+  const set = (id, val) => { if (val != null && val !== '') document.getElementById(id).value = val; };
+  set('f-naslov',    res.naslov);
+  set('f-autor',     res.autor);
+  set('f-godina',    res.godina);
+  set('f-strane',    res.strane);
+  set('f-cena-orig', res.cena_originalna);
+  set('f-cena-sniz', res.cena_snizena);
+  set('f-url',       res.url);
+  set('f-slika',     res.slika);
+  set('f-isbn',      res.isbn);
+  set('f-opis',      res.opis);
+
+  // Oblast — postavi na prvu prepoznatu
+  if (res.oblast) {
+    const fsel = document.getElementById('f-oblast');
+    // Pokušaj da nađeš opciju, ako ne postoji dodaj je
+    let found = [...fsel.options].find(o => o.value === res.oblast);
+    if (!found) {
+      fsel.appendChild(new Option(res.oblast, res.oblast));
+    }
+    fsel.value = res.oblast;
+  }
+
+  const oblastiStr = res.oblasti && res.oblasti.length
+    ? res.oblasti.join(', ')
+    : (res.oblast || '—');
+
+  fetchedExistingId = res.existing_id || null;
+
+  if (res.existing_id) {
+    // Knjiga već postoji — popuni i status/belešku iz baze
+    if (res.existing_status) document.getElementById('f-status').value = res.existing_status;
+    if (res.existing_beleska) document.getElementById('f-beleska').value = res.existing_beleska;
+    status.innerHTML = `⚠️ Knjiga već postoji u bazi — podaci će biti <strong>ažurirani</strong> · ${oblastiStr}`;
+    status.style.color = 'var(--gold2)';
+    document.querySelector('#view-dodaj .btn-gold').textContent = '💾 Ažuriraj knjigu';
+  } else {
+    status.innerHTML = `✅ Podaci preuzeti — <strong>${res.naslov || 'bez naslova'}</strong> · ${oblastiStr}`;
+    status.style.color = 'var(--green2)';
+    document.querySelector('#view-dodaj .btn-gold').textContent = 'Dodaj knjigu';
+  }
+  status.style.display = 'block';
+
+  toast(res.existing_id ? '⚠️ Knjiga već postoji — možeš ažurirati' : '✅ Forma popunjena!');
+}
+
 async function addBook() {
   const naslov = document.getElementById('f-naslov').value.trim();
   if (!naslov) { toast('Naslov je obavezan!'); return; }
@@ -1061,25 +1204,42 @@ async function addBook() {
     beleska: document.getElementById('f-beleska').value.trim(),
   };
 
-  const res = await api('/books', { method:'POST', body: JSON.stringify(body) });
-  if (res && res.id) {
-    toast('✅ Knjiga dodana!');
+  let res;
+  if (fetchedExistingId) {
+    res = await api('/books/' + fetchedExistingId, { method:'PUT', body: JSON.stringify(body) });
+  } else {
+    res = await api('/books', { method:'POST', body: JSON.stringify(body) });
+  }
+
+  if (res && !res.error) {
+    toast(fetchedExistingId ? '💾 Knjiga ažurirana!' : '✅ Knjiga dodana!');
+    fetchedExistingId = null;
+    document.querySelector('#view-dodaj .btn-gold').textContent = 'Dodaj knjigu';
     clearForm();
     await loadBooks();
     await loadStats();
     showView('sve');
   } else {
-    toast('❌ Greška pri dodavanju');
+    toast('❌ ' + (res?.error || 'Greška'));
   }
 }
 
 function clearForm() {
   ['f-naslov','f-autor','f-godina','f-strane','f-cena-orig','f-cena-sniz',
-   'f-url','f-slika','f-isbn','f-opis','f-beleska'].forEach(id => {
+   'f-url','f-slika','f-isbn','f-opis','f-beleska','fetch-url-in'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   document.getElementById('f-status').value = '';
+  document.getElementById('f-oblast').selectedIndex = 0;
+  const st = document.getElementById('fetch-url-status');
+  if (st) st.style.display = 'none';
+  fetchedExistingId = null;
+  document.querySelector('#view-dodaj .btn-gold').textContent = 'Dodaj knjigu';
+  const fetchBtn = document.getElementById('fetch-url-btn');
+  if (fetchBtn) fetchBtn.disabled = false;
+  const fetchIcon = document.getElementById('fetch-url-icon');
+  if (fetchIcon) fetchIcon.textContent = '🔍';
 }
 
 // ═══════════════════════════════════════════
@@ -1168,17 +1328,24 @@ function getCheckedAreas() {
   return [...cbs].map(cb => parseInt(cb.value));
 }
 
+function getCheckedSpecial() {
+  const cbs = document.querySelectorAll('.special-cb:checked');
+  return [...cbs].map(cb => cb.value);
+}
+
 function checkAllAreas(val) {
   document.querySelectorAll('.area-cb').forEach(cb => cb.checked = val);
+  document.querySelectorAll('.special-cb').forEach(cb => cb.checked = val);
 }
 
 async function startScrape() {
   const areaIds = getCheckedAreas();
-  if (!areaIds.length) { toast('Izaberi bar jednu oblast'); return; }
+  const special = getCheckedSpecial();
+  if (!areaIds.length && !special.length) { toast('Izaberi bar jednu oblast ili kolekciju'); return; }
 
   const res = await api('/scrape/start', {
     method:'POST',
-    body: JSON.stringify({ areas: areaIds })
+    body: JSON.stringify({ areas: areaIds.length ? areaIds : null, special: special.length ? special : null })
   });
   if (res?.error) { toast('❌ ' + res.error); return; }
 
@@ -1201,7 +1368,7 @@ async function quickScrape() {
 
   const res = await api('/scrape/start', {
     method:'POST',
-    body: JSON.stringify({ areas: null }) // sve oblasti
+    body: JSON.stringify({ areas: null, special: [] }) // sve oblasti + sve specijalne
   });
   if (res?.error) { toast('❌ ' + res.error); return; }
 
@@ -1280,7 +1447,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
 
-  const bookViews = ['sve','imam','zanima','procitana','nisam'];
+  const bookViews = ['sve','imam','zanima','procitana','nisam','bez'];
   if (bookViews.includes(name)) {
     document.getElementById('view-sve').classList.add('active');
   } else {
@@ -1418,7 +1585,7 @@ function renderPopust() {
     <div class="pb-author">${b.autor || ''}</div>
     <div class="pb-badges">
       ${b.godina ? `<span class="badge b-year">${b.godina}</span>` : ''}
-      ${b.oblast ? `<span class="badge b-area">${b.oblast}</span>` : ''}
+      ${(b.oblasti && b.oblasti.length ? b.oblasti : (b.oblast ? [b.oblast] : [])).map(o => `<span class='badge b-area'>${o}</span>`).join('')}
       ${b.url    ? `<a href="${b.url}" target="_blank" class="badge" style="background:#0a1a10;color:#5a9a68;border:1px solid #1a3020;text-decoration:none">🔗 sajt</a>` : ''}
       ${!b.in_db ? `<span class="badge" style="background:#1a1525;color:#9a8ac0;border:1px solid #2a2040">⚠️ nije u bazi</span>` : ''}
     </div>

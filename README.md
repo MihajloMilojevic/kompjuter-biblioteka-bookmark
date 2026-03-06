@@ -8,10 +8,12 @@ Lokalna web aplikacija za praćenje, organizovanje i naručivanje knjiga sa [kom
 
 ## Šta aplikacija radi
 
-- **Automatski preuzima** katalog knjiga sa kombib.rs (63 oblasti, sve strane)
+- **Automatski preuzima** katalog knjiga sa kombib.rs — sve oblasti (auto-discovery sa sajta), sve strane
+- **Višestruke kategorije** — svaka knjiga pamti sve oblasti kojima pripada
 - **Prati status** svake knjige: imam / zanima me / pročitana / nije za mene
 - **Beleške** po knjizi
-- **Ručno dodavanje** novih knjiga koje izlaze mesečno
+- **Dodavanje po URL-u** — nalepiš link sa kombib.rs i svi podaci (naslov, autor, cena, naslovnica…) se automatski preuzmu; ako knjiga već postoji, podaci se ažuriraju
+- **Ručno dodavanje** novih knjiga sa punom formom
 - **Popust kod** — uneseš promotivni kod i dobiješ listu knjiga na popustu, ukrštenu sa tvojom bibliotekom
 - **JavaScript snippet** — automatski generiše kod koji nalepiš u browser konzolu da selektuješ željene knjige direktno na kombib.rs
 - **Provera akcija** — unesi listu naslova, dobij izveštaj
@@ -29,14 +31,11 @@ Lokalna web aplikacija za praćenje, organizovanje i naručivanje knjiga sa [kom
 ### Koraci
 
 ```bash
-# Kloniraj repozitorijum
-git clone https://github.com/tvoj-username/knjige-beleznca.git
-cd knjige-beleznca
+git clone https://github.com/MihajloMilojevic/kompjuter-biblioteka-bookmark.git
+cd kompjuter-biblioteka-bookmark
 
-# Instaliraj zavisnosti
 pip install -r requirements.txt
 
-# Pokreni server
 python server.py
 ```
 
@@ -61,16 +60,30 @@ Svaka knjiga ima četiri statusa koja možeš dodeliti jednim klikom:
 | 📖 | Pročitana | Pročitao si je |
 | ✗ | Nije za mene | Nije od interesa |
 
-Klikni na **"+ beleška"** ispod svake knjige za lične napomene.
+Klikni na **"+ beleška"** ispod svake knjige za lične napomene. Klik na bilo koji **badge kategorije** na kartici automatski filtrira po toj oblasti.
 
 ### Scraping (osvežavanje kataloga)
 
-- **Brzo:** Dugme "Osveži sve knjige" u sidebaru → scraping svih 63 oblasti odjednom
-- **Selektivno:** Tab "Scraping" → biraju se tačno koje oblasti, praćenje progresa i log u realnom vremenu
+- **Brzo:** Dugme "Osveži sve knjige" u sidebaru → scraping svih oblasti odjednom
+- **Selektivno:** Tab "Scraping" → biraju se tačno koje oblasti i specijalne kolekcije (akcija, malo oštećene, novo, najtraženije), praćenje progresa i log u realnom vremenu
 
-Knjige sa oznakom **"Predlog za prevod"** se automatski preskakaju — to su knjige koje još nisu prevedene na srpski.
+Oblasti se **automatski otkrivaju sa sajta** pri svakom pokretanju — nove kategorije se dodaju bez ikakvih izmena koda.
 
-Tvoji statusi i beleške se **čuvaju** i pri svakom novom scrapingu.
+Knjige sa oznakom **"Predlog za prevod"** se automatski preskakaju. Ista knjiga koja se pojavljuje u više oblasti neće biti duplirana — sve kategorije se pamte u `oblasti` listi.
+
+Tvoji statusi i beleške se **čuvaju** pri svakom novom scrapingu.
+
+### Dodavanje knjige po URL-u
+
+1. Otvori tab **"➕ Dodaj knjigu"**
+2. Nalepi URL knjige sa kombib.rs u polje na vrhu i klikni **"🔍 Preuzmi"**
+3. Forma se automatski popuni — naslov, autor, oblasti, cena, naslovnica, ISBN, opis
+4. Ako knjiga **već postoji u bazi**, forma prikaže upozorenje i dugme postaje **"💾 Ažuriraj knjigu"** — postojeći status i beleška se čuvaju
+5. Dodaj status i belešku po želji, pa klikni dugme
+
+### Ručno dodavanje knjiga
+
+Isti tab, ispod URL sekcije nalazi se puna forma za ručni unos. Ručno dodate knjige su označene badge-om ✏️ i nikad se ne brišu pri re-scrapingu.
 
 ### Popust kod
 
@@ -79,7 +92,7 @@ Tvoji statusi i beleške se **čuvaju** i pri svakom novom scrapingu.
 3. Aplikacija preuzima listu knjiga direktno sa kombib.rs
 4. Svaka knjiga je ukrštena sa tvojom bazom — vidiš odmah koje imaš, koje te zanimaju
 5. Označi čekboksovima šta hoćeš da naručiš
-6. Klikni **"📋 Kopiraj JS"** — dobijаš JavaScript snippet
+6. Klikni **"📋 Kopiraj JS"** — dobijaš JavaScript snippet
 
 **Kako koristiti snippet:**
 1. Otvori [kombib.rs/popust-kod.php](https://kombib.rs/popust-kod.php) u browseru
@@ -87,10 +100,6 @@ Tvoji statusi i beleške se **čuvaju** i pri svakom novom scrapingu.
 3. Pritisni `F12` → tab **Console**
 4. Nalepi kopirani kod → `Enter`
 5. Skripta automatski selektuje tvoje knjige u listi, pa samo klikneš "Naruči"
-
-### Ručno dodavanje knjiga
-
-Tab **"➕ Dodaj knjigu"** — forma za unos svih podataka. Korisno za nove knjige koje izlaze između dva scrapinga. Ručno dodate knjige su označene badge-om ✏️ i nikad se ne brišu pri re-scrapingu.
 
 ### Provera akcija
 
@@ -101,13 +110,14 @@ Tab **"🔖 Proveri akciju"** — uneseš listu naslova ili URL-ova (svaki u nov
 ## Struktura projekta
 
 ```
-knjige-beleznca/
+kompjuter-biblioteka-bookmark/
 ├── server.py           ← Flask server + REST API
-├── scraper.py          ← Web scraper (sve oblasti, sve strane)
+├── scraper.py          ← Web scraper (auto-discovery oblasti, dedup, oblasti[])
+├── dedup.py            ← Jednokratna skripta za čišćenje duplikata iz books.json
 ├── books.json          ← Baza podataka (auto-generiše se, u .gitignore)
 ├── requirements.txt
 └── static/
-    └── index.html      ← Kompletna web aplikacija (single-file)
+    └── index.html      ← Kompletna web aplikacija (single-file SPA)
 ```
 
 ### Tehnologije
@@ -130,36 +140,44 @@ knjige-beleznca/
 | `POST` | `/api/books` | Dodaj knjigu ručno |
 | `PUT` | `/api/books/:id` | Izmeni status, belešku ili podatke |
 | `DELETE` | `/api/books/:id` | Obriši knjigu |
-| `POST` | `/api/scrape/start` | Pokreni scraping (`{"areas": [169, 165]}` ili `null` za sve) |
+| `POST` | `/api/scrape/start` | Pokreni scraping (`{"areas": [169, 165], "special": ["akcija"]}` ili `null` za sve) |
 | `GET` | `/api/scrape/status` | Status scrapinga (za polling) |
+| `POST` | `/api/scrape/stop` | Zaustavi scraping |
+| `GET` | `/api/areas` | Lista svih oblasti (sa sajta, live) |
+| `POST` | `/api/areas/refresh` | Prisili re-discovery oblasti sa sajta |
+| `POST` | `/api/fetch-book` | Preuzmi podatke knjige po URL-u (`{"url": "https://knjige.kombib.rs/..."}`) |
 | `POST` | `/api/popust` | Preuzmi knjige za popust kod (`{"kod": "SolaR2026"}`) |
 | `GET` | `/api/stats` | Statistike biblioteke |
-| `GET` | `/api/areas` | Lista svih oblasti |
 | `GET` | `/api/export/csv` | Preuzmi celu bazu kao CSV |
+
+---
+
+## Čišćenje duplikata
+
+Ako si koristio stariju verziju aplikacije i imaš duplirane knjige u bazi, pokreni:
+
+```bash
+python dedup.py
+```
+
+Skripta pravi backup (`books.json.bak`), uklanja duplikate po URL-u i spaja oblasti liste.
 
 ---
 
 ## .gitignore
 
-Preporučuje se da dodate `books.json` u `.gitignore` jer sadrži lične podatke (statusi, beleške):
-
-```gitignore
-books.json
-__pycache__/
-*.pyc
-.env
-```
+`books.json` je već u `.gitignore` — sadrži lične podatke (statusi, beleške) koji ne treba da idu u repozitorijum.
 
 ---
 
 ## Odricanje odgovornosti
 
-Ova aplikacija koristi web scraping za preuzimanje javno dostupnih podataka sa kombib.rs isključivo za ličnu upotrebu. Nemoj je koristiti za masovno preuzimanje podataka u komercijalne svrhe. Koristi razumne pauze između zahteva (već ugrađeno u scraper).
+Ova aplikacija koristi web scraping za preuzimanje javno dostupnih podataka sa kombib.rs isključivo za ličnu upotrebu. Nemoj je koristiti za masovno preuzimanje podataka u komercijalne svrhe. Scraper već ima ugrađene pauze između zahteva (0.8s između strana, 1s između oblasti).
 
 ---
 
 ## O projektu
 
-Cela aplikacija — od ideje do finalnog koda — nastala je kroz konverzaciju sa **[Claude](https://claude.ai)** (Anthropic), AI asistentom. Nije napisan ni jedan red koda ručno. Razvoj je tekao iterativno kroz chat: postavljanjem zahteva, debugovanjem grešaka i dodavanjem novih funkcionalnosti, sve unutar jednog razgovora.
+Cela aplikacija — od ideje do finalnog koda — nastala je kroz konverzaciju sa **[Claude](https://claude.ai)** (Anthropic), AI asistentom. Nije napisan ni jedan red koda ručno. Razvoj je tekao iterativno kroz chat: postavljanjem zahteva, debugovanjem grešaka i dodavanjem novih funkcionalnosti.
 
 Ovo je praktičan primer kako AI može biti korišćen kao kompletan razvojni partner za izgradnju funkcionalne aplikacije od nule.
