@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knjige — Beležnica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0f0d0a;
+  --surface:   #181510;
+  --surface2:  #211d17;
+  --border:    #2e2820;
+  --border2:   #3d3628;
+  --text:      #e8dfd0;
+  --text2:     #9a8e7e;
+  --text3:     #5c5347;
+  --gold:      #c9952a;
+  --gold2:     #e8b84b;
+  --gold-dim:  #7a5a18;
+  --red:       #a0362a;
+  --red2:      #c9473a;
+  --green:     #4a7a50;
+  --green2:    #5f9e68;
+  --blue:      #2a5080;
+  --blue2:     #3a70b2;
+  --radius:    10px;
+  --shadow:    0 4px 24px rgba(0,0,0,0.5);
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { height:100%; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height:100%;
+  overflow:hidden;
+}
+
+/* ─── LAYOUT ─── */
+.app { display:flex; height:100vh; overflow:hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width:240px; flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.sidebar-logo {
+  padding:20px 18px 16px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo h1 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem; font-weight:600;
+  color:var(--text); letter-spacing:-.01em;
+  line-height:1.2;
+}
+.sidebar-logo span { color:var(--gold); font-style:italic; }
+.sidebar-logo p { font-size:0.7rem; color:var(--text3); margin-top:3px; }
+
+.nav-section { padding:12px 10px 4px; }
+.nav-label {
+  font-size:0.62rem; text-transform:uppercase; letter-spacing:.12em;
+  color:var(--text3); padding:0 8px; margin-bottom:4px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 10px; border-radius:8px;
+  cursor:pointer; transition:background .15s;
+  font-size:0.84rem; color:var(--text2);
+  border:none; background:transparent; width:100%; text-align:left;
+}
+.nav-item:hover { background:var(--surface2); color:var(--text); }
+.nav-item.active { background:var(--border2); color:var(--text); }
+.nav-item .icon { font-size:1rem; width:20px; text-align:center; flex-shrink:0; }
+.nav-item .badge {
+  margin-left:auto; font-size:0.65rem;
+  background:var(--border2); color:var(--text3);
+  padding:1px 6px; border-radius:10px;
+}
+.nav-item.active .badge { background:var(--gold-dim); color:var(--gold2); }
+
+.sidebar-bottom {
+  margin-top:auto;
+  border-top:1px solid var(--border);
+  padding:12px 10px;
+}
+.scrape-btn {
+  width:100%; padding:9px;
+  background:linear-gradient(135deg,var(--gold-dim),#5a3d10);
+  border:1px solid var(--gold-dim);
+  border-radius:8px; cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  font-size:0.82rem; font-weight:500;
+  color:var(--gold2); transition:all .2s;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.scrape-btn:hover { background:linear-gradient(135deg,#7a5a18,#6a4718); }
+.scrape-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ─── MAIN ─── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* TOPBAR */
+.topbar {
+  height:54px; flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+  padding:0 20px;
+  background:var(--surface);
+}
+.search-wrap { position:relative; flex:1; max-width:420px; }
+.search-wrap input {
+  width:100%; padding:7px 12px 7px 34px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text);
+  font-family:'DM Sans',sans-serif; font-size:0.85rem;
+  outline:none; transition:border-color .2s;
+}
+.search-wrap input:focus { border-color:var(--gold-dim); }
+.search-wrap input::placeholder { color:var(--text3); }
+.search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text3); font-size:.9rem; }
+
+.topbar-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+select {
+  padding:6px 10px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text);
+  font-family:'DM Sans',sans-serif; font-size:0.8rem;
+  outline:none; cursor:pointer;
+}
+
+/* ─── CONTENT ─── */
+.content { flex:1; overflow-y:auto; padding:20px; }
+
+/* STATS BAR */
+.stats-bar {
+  display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap;
+}
+.stat {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:12px 16px;
+  flex:1; min-width:110px; transition:border-color .2s;
+}
+.stat:hover { border-color:var(--border2); }
+.stat-num {
+  font-family:'Cormorant Garamond',serif;
+  font-size:2rem; font-weight:600; line-height:1;
+  color:var(--gold); margin-bottom:3px;
+}
+.stat-lbl { font-size:0.7rem; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; }
+
+/* SECTION HEADER */
+.section-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.section-title { font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-weight:600; }
+.count-pill {
+  font-size:0.7rem; padding:2px 8px;
+  background:var(--border2); color:var(--text3); border-radius:20px;
+}
+
+/* BOOK GRID */
+.books-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+  gap:12px;
+}
+
+/* BOOK CARD */
+.book-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:all .2s;
+  position:relative;
+}
+.book-card:hover { border-color:var(--border2); box-shadow:var(--shadow); transform:translateY(-1px); }
+.book-card.s-imam    { border-left:3px solid var(--green); }
+.book-card.s-zanima  { border-left:3px solid var(--gold); }
+.book-card.s-procitana { border-left:3px solid var(--blue2); }
+.book-card.s-nisam   { border-left:3px solid var(--text3); opacity:.6; }
+
+.card-row { display:flex; }
+.card-cover {
+  width:82px; flex-shrink:0;
+  background:var(--surface2);
+  display:flex; align-items:stretch;
+}
+.card-cover img { width:82px; height:122px; object-fit:cover; display:block; }
+.card-cover .no-cover {
+  width:82px; height:122px;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(160deg,var(--surface2),var(--border));
+  font-size:1.6rem; color:var(--text3);
+}
+
+.card-body { padding:11px 13px; flex:1; min-width:0; }
+.card-title {
+  font-family:'Cormorant Garamond',serif;
+  font-size:.97rem; font-weight:600; line-height:1.3;
+  margin-bottom:3px; color:var(--text);
+}
+.card-author { font-size:.72rem; color:var(--text3); margin-bottom:7px; }
+
+.card-badges { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:7px; }
+.badge {
+  font-size:.62rem; padding:2px 6px; border-radius:4px; white-space:nowrap;
+}
+.b-year   { background:#1a1710; color:var(--text3); border:1px solid var(--border); }
+.b-pages  { background:#1a1710; color:var(--text3); border:1px solid var(--border); }
+.b-area   { background:#1a1814; color:#5a8a62; border:1px solid #253025; }
+.b-akcija { background:#2a1a0a; color:#d4882a; border:1px solid #4a2e0a; }
+.b-manual { background:#1a1525; color:#7a6ab0; border:1px solid #2a2040; }
+
+.card-price { display:flex; align-items:baseline; gap:6px; margin-bottom:9px; }
+.price-main { font-size:.95rem; font-weight:500; color:var(--gold2); }
+.price-old  { font-size:.72rem; color:var(--text3); text-decoration:line-through; }
+
+.card-status-row { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
+.sbtn {
+  font-size:.67rem; padding:3px 8px; border-radius:5px;
+  border:1px solid var(--border2); background:transparent;
+  color:var(--text3); cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:all .15s; white-space:nowrap;
+}
+.sbtn:hover { color:var(--text); border-color:var(--text3); }
+.sbtn.on-imam     { background:var(--green);  color:#fff; border-color:var(--green); }
+.sbtn.on-zanima   { background:var(--gold-dim); color:var(--gold2); border-color:var(--gold-dim); }
+.sbtn.on-procitana{ background:var(--blue);   color:#fff; border-color:var(--blue); }
+.sbtn.on-nisam    { background:var(--text3);  color:#fff; border-color:var(--text3); }
+
+.card-note-area { margin-top:5px; }
+.note-display {
+  font-size:.72rem; color:var(--text3); font-style:italic;
+  padding:4px 7px; background:var(--surface2); border-radius:5px;
+  cursor:pointer; transition:background .15s;
+}
+.note-display:hover { background:var(--border); }
+.note-ta {
+  width:100%; padding:5px 7px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:5px; color:var(--text);
+  font-family:'DM Sans',sans-serif; font-size:.72rem;
+  resize:none; outline:none;
+}
+.note-ta:focus { border-color:var(--gold-dim); }
+.card-link {
+  display:inline-block; margin-top:5px;
+  font-size:.68rem; color:var(--gold-dim);
+  text-decoration:none; transition:color .15s;
+}
+.card-link:hover { color:var(--gold); }
+
+/* ─── SCRAPE PANEL ─── */
+.scrape-panel {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:20px; max-width:680px;
+  margin-bottom:20px;
+}
+.scrape-panel h2 { font-family:'Cormorant Garamond',serif; font-size:1.25rem; margin-bottom:6px; }
+.scrape-panel p  { font-size:.82rem; color:var(--text2); margin-bottom:14px; }
+
+.area-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:6px; margin-bottom:14px; max-height:200px; overflow-y:auto;
+}
+.area-check {
+  display:flex; align-items:center; gap:6px;
+  font-size:.78rem; color:var(--text2); cursor:pointer;
+  padding:5px 8px; border-radius:6px; transition:background .15s;
+}
+.area-check:hover { background:var(--surface2); }
+.area-check input { accent-color:var(--gold); cursor:pointer; }
+
+.progress-bar-wrap {
+  background:var(--border); border-radius:6px; height:8px;
+  overflow:hidden; margin:12px 0 6px;
+}
+.progress-bar-fill {
+  height:100%; background:linear-gradient(90deg,var(--gold-dim),var(--gold2));
+  border-radius:6px; transition:width .4s ease;
+}
+.scrape-log {
+  background:var(--bg); border-radius:6px; padding:10px;
+  font-size:.72rem; font-family:monospace; color:var(--text3);
+  height:120px; overflow-y:auto; margin-top:8px;
+}
+.log-line { margin-bottom:2px; }
+.log-line.new { color:var(--gold2); }
+
+/* ─── ADD BOOK FORM ─── */
+.add-panel {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:24px; max-width:680px;
+}
+.add-panel h2 { font-family:'Cormorant Garamond',serif; font-size:1.25rem; margin-bottom:16px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+.form-group.full { grid-column:1/-1; }
+.form-group label { font-size:.72rem; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; }
+.form-group input, .form-group textarea, .form-group select {
+  padding:8px 10px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:7px; color:var(--text);
+  font-family:'DM Sans',sans-serif; font-size:.85rem; outline:none;
+  transition:border-color .2s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color:var(--gold-dim);
+}
+.form-group textarea { resize:vertical; min-height:70px; }
+.form-actions { margin-top:16px; display:flex; gap:8px; }
+
+/* ─── AKCIJA CHECK ─── */
+.akcija-panel {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius); padding:24px; max-width:680px;
+}
+.akcija-panel h2 { font-family:'Cormorant Garamond',serif; font-size:1.25rem; margin-bottom:6px; }
+.akcija-panel p  { font-size:.82rem; color:var(--text2); margin-bottom:12px; }
+.akcija-panel textarea {
+  width:100%; height:150px;
+  padding:10px; background:var(--surface2);
+  border:1px solid var(--border2); border-radius:8px;
+  color:var(--text); font-family:'DM Sans',sans-serif;
+  font-size:.84rem; resize:vertical; outline:none;
+}
+.akcija-panel textarea:focus { border-color:var(--gold-dim); }
+.akcija-result { margin-top:16px; }
+.akcija-result h3 { font-family:'Cormorant Garamond',serif; font-size:1rem; margin-bottom:10px; color:var(--text2); }
+.akcija-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 0; border-bottom:1px solid var(--border);
+}
+.ai-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.ai-info { flex:1; min-width:0; }
+.ai-title { font-size:.85rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ai-sub   { font-size:.72rem; color:var(--text3); margin-top:1px; }
+.ai-tag {
+  font-size:.68rem; padding:2px 8px; border-radius:20px; white-space:nowrap;
+}
+.tag-imam     { background:#1a2e1e; color:var(--green2); }
+.tag-zanima   { background:#2a1e0a; color:var(--gold2); }
+.tag-procitana{ background:#0d1e30; color:var(--blue2); }
+.tag-nisam    { background:#1e1e1e; color:var(--text3); }
+.tag-novo     { background:#0a1a2a; color:#5a90c0; }
+.tag-notfound { background:#1e1010; color:var(--red2); }
+.akcija-summary {
+  margin-top:12px; padding:10px 14px;
+  background:var(--surface2); border-radius:8px;
+  font-size:.8rem; color:var(--text2);
+}
+
+/* ─── BUTTONS ─── */
+.btn {
+  padding:8px 16px; border-radius:8px; cursor:pointer;
+  font-family:'DM Sans',sans-serif; font-size:.82rem;
+  font-weight:500; border:none; transition:all .15s;
+}
+.btn-gold { background:var(--gold-dim); color:var(--gold2); border:1px solid var(--gold-dim); }
+.btn-gold:hover { background:#9a6e18; }
+.btn-outline { background:transparent; border:1px solid var(--border2); color:var(--text2); }
+.btn-outline:hover { border-color:var(--text3); color:var(--text); }
+.btn-red { background:var(--red); color:#fff; }
+.btn-red:hover { background:var(--red2); }
+
+/* ─── VIEWS ─── */
+.view { display:none; }
+.view.active { display:block; }
+
+/* ─── SCRAPE MODAL OVERLAY ─── */
+.overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.7); z-index:200;
+  display:none; align-items:center; justify-content:center;
+}
+.overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:14px; padding:28px; width:90%; max-width:600px;
+  max-height:80vh; overflow-y:auto;
+}
+.modal h2 { font-family:'Cormorant Garamond',serif; font-size:1.3rem; margin-bottom:10px; }
+.modal-close {
+  position:absolute; top:16px; right:20px;
+  background:transparent; border:none;
+  color:var(--text3); font-size:1.2rem; cursor:pointer;
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position:fixed; bottom:24px; right:24px; z-index:500;
+  background:var(--surface2); border:1px solid var(--border2);
+  color:var(--text); padding:10px 16px; border-radius:10px;
+  font-size:.82rem; opacity:0; transform:translateY(8px);
+  transition:all .3s; pointer-events:none;
+  box-shadow:var(--shadow);
+}
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* ─── EMPTY ─── */
+.empty { text-align:center; padding:48px 20px; color:var(--text3); }
+.empty .e-icon { font-size:2.5rem; margin-bottom:12px; }
+.empty p { font-size:.88rem; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:700px) {
+  .sidebar { width:200px; }
+  .books-grid { grid-template-columns:1fr; }
+  .form-grid { grid-template-columns:1fr; }
+  .stats-bar { flex-wrap:wrap; }
+  .stat { min-width:80px; }
+}
+/* ─── POPUST PANEL ─── */
+.popust-panel {
+  max-width:860px;
+}
+.popust-header {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:12px; margin-bottom:16px; flex-wrap:wrap;
+}
+.popust-header h2 { font-family:'Cormorant Garamond',serif; font-size:1.25rem; margin-bottom:4px; }
+.popust-header p  { font-size:.82rem; color:var(--text2); }
+.kombib-link {
+  font-size:.75rem; color:var(--gold-dim); text-decoration:none;
+  border:1px solid var(--gold-dim); padding:5px 10px; border-radius:7px;
+  white-space:nowrap; transition:all .15s; flex-shrink:0;
+}
+.kombib-link:hover { color:var(--gold2); border-color:var(--gold2); }
+
+.kod-input-row {
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:4px;
+}
+
+.popust-results-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; flex-wrap:wrap; gap:8px;
+}
+
+.popust-stats {
+  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;
+}
+.pstat {
+  padding:6px 12px; border-radius:20px; font-size:.75rem; font-weight:500;
+}
+.pstat-total  { background:var(--surface2); color:var(--text2); border:1px solid var(--border2); }
+.pstat-imam   { background:#1a2e1e; color:var(--green2); border:1px solid #253525; }
+.pstat-zanima { background:#2a1e0a; color:var(--gold2); border:1px solid #3a2a0a; }
+.pstat-procitana { background:#0d1e30; color:var(--blue2); border:1px solid #0d2540; }
+.pstat-bez    { background:var(--surface2); color:var(--text3); border:1px solid var(--border); }
+
+/* Popust book row */
+.popust-book {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:9px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  margin-bottom:7px; transition:all .15s;
+}
+.popust-book:hover { border-color:var(--border2); }
+.popust-book.selected { border-color:var(--gold-dim); background:#1a1508; }
+.popust-book.s-imam    { border-left:3px solid var(--green); }
+.popust-book.s-zanima  { border-left:3px solid var(--gold); }
+.popust-book.s-procitana{ border-left:3px solid var(--blue2); }
+.popust-book.s-nisam   { border-left:3px solid var(--text3); opacity:.6; }
+
+.pb-check {
+  width:18px; height:18px; flex-shrink:0;
+  accent-color:var(--gold); cursor:pointer;
+}
+.pb-cover {
+  width:46px; height:62px; flex-shrink:0; border-radius:4px; overflow:hidden;
+  background:var(--surface2); display:flex; align-items:center; justify-content:center;
+}
+.pb-cover img { width:100%; height:100%; object-fit:cover; }
+.pb-cover .nc { font-size:1.2rem; color:var(--text3); }
+.pb-info { flex:1; min-width:0; }
+.pb-title { font-family:'Cormorant Garamond',serif; font-size:.97rem; font-weight:600; color:var(--text); }
+.pb-author { font-size:.72rem; color:var(--text3); margin-top:1px; }
+.pb-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+.pb-right { text-align:right; flex-shrink:0; }
+.pb-price-kod { font-size:1rem; font-weight:600; color:var(--gold2); }
+.pb-price-orig { font-size:.72rem; color:var(--text3); text-decoration:line-through; margin-bottom:4px; }
+.pb-discount { font-size:.7rem; padding:2px 6px; border-radius:4px; background:#2a1a0a; color:#e8882a; margin-bottom:4px; display:inline-block; }
+.pb-status-row { display:flex; gap:4px; justify-content:flex-end; flex-wrap:wrap; }
+
+/* JS Generator */
+.js-generator {
+  margin-top:20px;
+  background:var(--bg); border:1px solid var(--border2);
+  border-radius:10px; padding:16px;
+}
+.js-gen-header {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:.85rem; font-weight:500; color:var(--gold2);
+  margin-bottom:10px;
+}
+.js-code-area {
+  width:100%; height:200px;
+  padding:10px 12px;
+  background:#060504; border:1px solid var(--border);
+  border-radius:8px; color:#7ec8a0;
+  font-family:'Courier New',monospace; font-size:.72rem;
+  resize:vertical; outline:none; cursor:text;
+  line-height:1.5;
+}
+.js-code-area:focus { border-color:var(--gold-dim); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>📚 <span>Beležnica</span></h1>
+      <p id="last-scrape-lbl">knjige.kombib.rs</p>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Prikaz</div>
+      <button class="nav-item active" id="nav-sve" onclick="showView('sve')">
+        <span class="icon">🗂</span> Sve knjige
+        <span class="badge" id="nb-sve">0</span>
+      </button>
+      <button class="nav-item" id="nav-imam" onclick="showView('imam')">
+        <span class="icon">✅</span> Imam
+        <span class="badge" id="nb-imam">0</span>
+      </button>
+      <button class="nav-item" id="nav-zanima" onclick="showView('zanima')">
+        <span class="icon">⭐</span> Zanima me
+        <span class="badge" id="nb-zanima">0</span>
+      </button>
+      <button class="nav-item" id="nav-procitana" onclick="showView('procitana')">
+        <span class="icon">📖</span> Pročitane
+        <span class="badge" id="nb-procitana">0</span>
+      </button>
+      <button class="nav-item" id="nav-nisam" onclick="showView('nisam')">
+        <span class="icon">✗</span> Nije za mene
+        <span class="badge" id="nb-nisam">0</span>
+      </button>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Alati</div>
+      <button class="nav-item" id="nav-popust" onclick="showView('popust')">
+        <span class="icon">🏷️</span> Popust kod
+      </button>
+      <button class="nav-item" id="nav-dodaj" onclick="showView('dodaj')">
+        <span class="icon">➕</span> Dodaj knjigu
+      </button>
+      <button class="nav-item" id="nav-akcija" onclick="showView('akcija')">
+        <span class="icon">🔖</span> Proveri akciju
+      </button>
+      <button class="nav-item" id="nav-scrape" onclick="showView('scrape')">
+        <span class="icon">🔄</span> Scraping
+      </button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="scrape-btn" onclick="quickScrape()" id="quick-scrape-btn">
+        <span id="qs-icon">🔄</span>
+        <span id="qs-label">Osveži sve knjige</span>
+      </button>
+      <div style="margin-top:8px;">
+        <button class="btn btn-outline" style="width:100%;font-size:.75rem" onclick="exportCSV()">⬇️ Izvezi CSV</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-in" placeholder="Pretraži naslove i autore..." oninput="filterBooks()">
+      </div>
+      <div class="topbar-right">
+        <select id="oblast-filter" onchange="filterBooks()">
+          <option value="">Sve oblasti</option>
+        </select>
+        <select id="sort-sel" onchange="filterBooks()">
+          <option value="default">Sortiraj...</option>
+          <option value="godina_desc">Godina ↓</option>
+          <option value="godina_asc">Godina ↑</option>
+          <option value="cena_asc">Cena ↑</option>
+          <option value="cena_desc">Cena ↓</option>
+          <option value="naslov_asc">Naslov A-Z</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- SVE / STATUS VIEWS share one container -->
+      <div class="view active" id="view-sve">
+        <div class="stats-bar" id="stats-bar"></div>
+        <div class="section-header">
+          <span class="section-title" id="view-title">Sve knjige</span>
+          <span class="count-pill" id="book-count">0</span>
+        </div>
+        <div class="books-grid" id="books-container"></div>
+      </div>
+
+      <!-- DODAJ KNJIGU -->
+      <div class="view" id="view-dodaj">
+        <div class="add-panel">
+          <h2>➕ Dodaj novu knjigu</h2>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Naslov *</label>
+              <input type="text" id="f-naslov" placeholder="Puni naziv knjige">
+            </div>
+            <div class="form-group">
+              <label>Autor</label>
+              <input type="text" id="f-autor" placeholder="Ime Prezime">
+            </div>
+            <div class="form-group">
+              <label>Oblast</label>
+              <select id="f-oblast"></select>
+            </div>
+            <div class="form-group">
+              <label>Godina</label>
+              <input type="number" id="f-godina" placeholder="2025" min="1990" max="2030">
+            </div>
+            <div class="form-group">
+              <label>Broj strana</label>
+              <input type="number" id="f-strane" placeholder="320" min="1">
+            </div>
+            <div class="form-group">
+              <label>Cena originalna (RSD)</label>
+              <input type="number" id="f-cena-orig" placeholder="2500">
+            </div>
+            <div class="form-group">
+              <label>Cena snižena (RSD)</label>
+              <input type="number" id="f-cena-sniz" placeholder="1750">
+            </div>
+            <div class="form-group full">
+              <label>URL na kombib.rs</label>
+              <input type="url" id="f-url" placeholder="https://knjige.kombib.rs/...">
+            </div>
+            <div class="form-group full">
+              <label>URL naslovnice</label>
+              <input type="url" id="f-slika" placeholder="https://kombib.rs/images/...">
+            </div>
+            <div class="form-group">
+              <label>ISBN</label>
+              <input type="text" id="f-isbn" placeholder="978-...">
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select id="f-status">
+                <option value="">Bez statusa</option>
+                <option value="imam">✅ Imam</option>
+                <option value="zanima">⭐ Zanima me</option>
+                <option value="procitana">📖 Pročitana</option>
+                <option value="nisam">✗ Nije za mene</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label>Opis</label>
+              <textarea id="f-opis" placeholder="Kratki opis knjige..."></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Lična beleška</label>
+              <textarea id="f-beleska" placeholder="Tvoje napomene..."></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-gold" onclick="addBook()">Dodaj knjigu</button>
+            <button class="btn btn-outline" onclick="clearForm()">Poništi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AKCIJA PROVERA -->
+      <div class="view" id="view-akcija">
+        <div class="akcija-panel">
+          <h2>🔖 Proveri knjige na akciji</h2>
+          <p>Unesi naslove ili URL-ove knjiga koje su na akciji — svaki u novom redu. Dobićeš izveštaj koji ih ukršta sa tvojom bibliotekom.</p>
+          <textarea id="akcija-ta" placeholder="Primer:
+Mašinsko učenje uz PyTorch
+Python mašinsko učenje
+https://knjige.kombib.rs/osnove-vestacke-inteligencije"></textarea>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn-gold" onclick="runAkcija()">🔎 Analiziraj</button>
+            <button class="btn btn-outline" onclick="document.getElementById('akcija-ta').value=''">Obriši</button>
+          </div>
+          <div class="akcija-result" id="akcija-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- SCRAPING -->
+      <div class="view" id="view-scrape">
+        <div class="scrape-panel">
+          <h2>🔄 Osvežavanje baze knjiga</h2>
+          <p>Izaberi oblasti koje želiš da scrapu-ješ ili pokreni sve odjednom. Preskočiće knjige sa oznakom "Predlog za prevod".</p>
+
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <button class="btn btn-outline" style="font-size:.75rem" onclick="checkAllAreas(true)">Odaberi sve</button>
+            <button class="btn btn-outline" style="font-size:.75rem" onclick="checkAllAreas(false)">Poništi sve</button>
+          </div>
+          <div class="area-grid" id="area-grid"></div>
+
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-gold" id="start-btn" onclick="startScrape()">▶ Pokreni scraping</button>
+            <button class="btn btn-outline" id="stop-btn" onclick="stopScrape()" style="display:none">⏹ Zaustavi</button>
+          </div>
+
+          <div id="scrape-progress" style="display:none">
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" id="prog-fill" style="width:0%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text3);margin-bottom:6px">
+              <span id="prog-text">Čekanje...</span>
+              <span id="prog-pct">0%</span>
+            </div>
+            <div class="scrape-log" id="scrape-log"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POPUST KOD -->
+      <div class="view" id="view-popust">
+        <div class="popust-panel">
+          <div class="popust-header">
+            <div>
+              <h2>🏷️ Popust kod</h2>
+              <p>Unesi popust kod sa kombib.rs i vidi sve knjige na popustu, ukrštene sa tvojom bibliotekom.</p>
+            </div>
+            <a href="https://kombib.rs/popust-kod.php" target="_blank" class="kombib-link">
+              Otvori na kombib.rs ↗
+            </a>
+          </div>
+
+          <div class="kod-input-row">
+            <div style="position:relative;flex:1;max-width:340px">
+              <input type="text" id="popust-kod-in" placeholder="npr. SolaR2026"
+                style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:1rem;letter-spacing:.05em;outline:none;"
+                onkeydown="if(event.key==='Enter')fetchPopust()"
+                onfocus="this.style.borderColor='var(--gold-dim)'"
+                onblur="this.style.borderColor='var(--border2)'">
+              <span id="popust-spinner" style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.9rem">⏳</span>
+            </div>
+            <button class="btn btn-gold" onclick="fetchPopust()">Pretraži</button>
+            <button class="btn btn-outline" onclick="clearPopust()">Obriši</button>
+          </div>
+          <div id="popust-error" style="display:none;margin-top:10px;padding:8px 12px;background:#1a0f0f;border-radius:8px;color:var(--red2);font-size:.82rem"></div>
+
+          <!-- RESULTS -->
+          <div id="popust-results" style="display:none;margin-top:20px">
+            <div class="popust-results-header">
+              <div>
+                <span class="section-title" id="popust-title">Knjige</span>
+                <span class="count-pill" id="popust-count" style="margin-left:8px">0</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="popust-filter" onchange="renderPopust()" style="font-size:.75rem;padding:5px 8px;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none">
+                  <option value="">Sve</option>
+                  <option value="imam">✅ Imam</option>
+                  <option value="zanima">⭐ Zanima me</option>
+                  <option value="procitana">📖 Pročitana</option>
+                  <option value="nisam">✗ Nije za mene</option>
+                  <option value="bez">Bez statusa</option>
+                </select>
+                <button class="btn btn-outline" style="font-size:.75rem" onclick="selectAllPopust(true)">Označi sve</button>
+                <button class="btn btn-outline" style="font-size:.75rem" onclick="selectAllPopust(false)">Poništi sve</button>
+              </div>
+            </div>
+
+            <!-- STATS ROW -->
+            <div class="popust-stats" id="popust-stats"></div>
+
+            <!-- BOOK LIST -->
+            <div id="popust-books-list"></div>
+
+            <!-- JS GENERATOR -->
+            <div class="js-generator" id="js-gen-panel" style="display:none">
+              <div class="js-gen-header">
+                <span>⚙️ JavaScript za automatski odabir u browseru</span>
+                <button class="btn btn-outline" style="font-size:.72rem" onclick="copyJS()">📋 Kopiraj</button>
+              </div>
+              <p style="font-size:.75rem;color:var(--text3);margin-bottom:8px;">
+                Otvori <strong>kombib.rs/popust-kod.php</strong>, unesi kod, i kad se učitaju knjige — otvori DevTools (F12), idi na <strong>Console</strong> tab i nalepi ovaj kod:
+              </p>
+              <textarea class="js-code-area" id="js-code-out" readonly onclick="this.select()"></textarea>
+              <div style="margin-top:6px;font-size:.72rem;color:var(--text3)">
+                Skripta će automatski kliknuti "Naruči" za sve označene knjige. Možeš izmenjivati listu pre kopiranja.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let allBooks = [];
+let currentView = 'sve';
+let editingNote = null;
+let scrapeTimer = null;
+let areas = [];
+
+// ═══════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════
+async function api(path, opts={}) {
+  try {
+    const r = await fetch('/api' + path, {
+      headers:{'Content-Type':'application/json'},
+      ...opts
+    });
+    return await r.json();
+  } catch(e) {
+    console.error(path, e);
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init() {
+  areas = await api('/areas') || [];
+  populateAreaSelects();
+  await loadBooks();
+  await loadStats();
+  await checkScrapeStatus();
+}
+
+async function loadBooks() {
+  const q = document.getElementById('search-in').value;
+  const oblast = document.getElementById('oblast-filter').value;
+  let url = '/books?';
+  if (q) url += `q=${encodeURIComponent(q)}&`;
+  if (currentView !== 'sve' && ['imam','zanima','procitana','nisam'].includes(currentView))
+    url += `status=${currentView}&`;
+  if (oblast) url += `oblast=${encodeURIComponent(oblast)}&`;
+
+  const res = await api(url);
+  if (!res) return;
+  allBooks = res.books || [];
+  renderBooks();
+  updateNavBadges(res);
+}
+
+async function loadStats() {
+  const s = await api('/stats');
+  if (!s) return;
+  const statuses = s.statusi || {};
+  const badges = ['imam','zanima','procitana','nisam'];
+  badges.forEach(b => {
+    const el = document.getElementById('nb-'+b);
+    if (el) el.textContent = statuses[b] || 0;
+  });
+  document.getElementById('nb-sve').textContent = s.ukupno || 0;
+
+  // Stats bar
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat"><div class="stat-num">${s.ukupno}</div><div class="stat-lbl">Ukupno knjiga</div></div>
+    <div class="stat"><div class="stat-num">${statuses.imam||0}</div><div class="stat-lbl">Imam</div></div>
+    <div class="stat"><div class="stat-num">${statuses.zanima||0}</div><div class="stat-lbl">Zanima me</div></div>
+    <div class="stat"><div class="stat-num">${statuses.procitana||0}</div><div class="stat-lbl">Pročitane</div></div>
+    <div class="stat"><div class="stat-num">${s.na_akciji||0}</div><div class="stat-lbl">Na akciji</div></div>
+    <div class="stat"><div class="stat-num">${s.rucno_dodato||0}</div><div class="stat-lbl">Ručno dodato</div></div>
+  `;
+
+  const meta = s.meta || {};
+  if (meta.last_scrape) {
+    const d = new Date(meta.last_scrape);
+    document.getElementById('last-scrape-lbl').textContent =
+      'Osveženo: ' + d.toLocaleDateString('sr') + ' ' + d.toLocaleTimeString('sr',{hour:'2-digit',minute:'2-digit'});
+  }
+}
+
+function updateNavBadges(res) {
+  // Called after loading books — update only the relevant count
+}
+
+function populateAreaSelects() {
+  const sel = document.getElementById('oblast-filter');
+  const fsel = document.getElementById('f-oblast');
+  areas.forEach(a => {
+    const o1 = new Option(a.name, a.name);
+    const o2 = new Option(a.name, a.name);
+    sel.appendChild(o1);
+    if (fsel) fsel.appendChild(o2);
+  });
+  // Add "Ostalo" option for manual form
+  if (fsel) fsel.appendChild(new Option('Ostalo','Ostalo'));
+
+  // Area checkboxes for scraping
+  const grid = document.getElementById('area-grid');
+  if (grid) {
+    grid.innerHTML = areas.map(a => `
+      <label class="area-check">
+        <input type="checkbox" value="${a.id}" checked class="area-cb"> ${a.name}
+      </label>
+    `).join('');
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER BOOKS
+// ═══════════════════════════════════════════
+function filterBooks() { loadBooks(); }
+
+function sortedBooks() {
+  const sort = document.getElementById('sort-sel').value;
+  let b = [...allBooks];
+  if (sort === 'godina_desc') b.sort((a,c)=>(c.godina||0)-(a.godina||0));
+  else if (sort === 'godina_asc') b.sort((a,c)=>(a.godina||0)-(c.godina||0));
+  else if (sort === 'cena_asc') b.sort((a,c)=>priceOf(a)-priceOf(c));
+  else if (sort === 'cena_desc') b.sort((a,c)=>priceOf(c)-priceOf(a));
+  else if (sort === 'naslov_asc') b.sort((a,c)=>a.naslov.localeCompare(c.naslov,'sr'));
+  return b;
+}
+
+function priceOf(b) { return b.cena_snizena || b.cena_originalna || 99999; }
+
+function renderBooks() {
+  const books = sortedBooks();
+  const container = document.getElementById('books-container');
+  const titles = {
+    sve:'Sve knjige', imam:'Imam', zanima:'Zanima me',
+    procitana:'Pročitane', nisam:'Nije za mene'
+  };
+  document.getElementById('view-title').textContent = titles[currentView] || 'Knjige';
+  document.getElementById('book-count').textContent = books.length + ' knjiga';
+
+  if (!books.length) {
+    container.innerHTML = `<div class="empty"><div class="e-icon">📭</div><p>Nema knjiga za ovaj filter.</p><p style="margin-top:6px;font-size:.78rem">Pokreni scraping ili dodaj knjige ručno.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = books.map(b => cardHTML(b)).join('');
+}
+
+function cardHTML(b) {
+  const s = b.status || '';
+  const sc = s ? `s-${s}` : '';
+  const cena = b.cena_snizena || b.cena_originalna;
+  const hasD = b.cena_snizena && b.cena_originalna && b.cena_snizena < b.cena_originalna;
+
+  const imgHTML = b.slika
+    ? `<img src="${b.slika}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'no-cover\\'>📗</div>'">`
+    : `<div class="no-cover">📗</div>`;
+
+  const noteHTML = editingNote === b.id
+    ? `<textarea class="note-ta" id="nta-${b.id}" rows="2"
+          onblur="saveNote('${b.id}')"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();saveNote('${b.id}')}"
+        >${b.beleska||''}</textarea>`
+    : b.beleska
+      ? `<div class="note-display" onclick="startNote('${b.id}')">💬 ${b.beleska}</div>`
+      : `<div class="note-display" onclick="startNote('${b.id}')" style="color:var(--text3);opacity:.5">+ beleška</div>`;
+
+  return `
+<div class="book-card ${sc}" id="card-${b.id}">
+  <div class="card-row">
+    <div class="card-cover">${imgHTML}</div>
+    <div class="card-body">
+      <div class="card-title">${b.naslov}</div>
+      <div class="card-author">${b.autor||'—'}</div>
+      <div class="card-badges">
+        ${b.godina?`<span class="badge b-year">${b.godina}</span>`:''}
+        ${b.strane?`<span class="badge b-pages">${b.strane} str.</span>`:''}
+        <span class="badge b-area">${b.oblast||''}</span>
+        ${b.akcija?`<span class="badge b-akcija">🔥 Akcija</span>`:''}
+        ${b.izvor==='manual'?`<span class="badge b-manual">✏️ Ručno</span>`:''}
+      </div>
+      <div class="card-price">
+        <span class="price-main">${cena?cena.toLocaleString('sr')+' RSD':'—'}</span>
+        ${hasD?`<span class="price-old">${b.cena_originalna.toLocaleString('sr')}</span>`:''}
+      </div>
+      <div class="card-status-row">
+        <button class="sbtn ${s==='imam'?'on-imam':''}" onclick="setStatus('${b.id}','imam')">✅ Imam</button>
+        <button class="sbtn ${s==='zanima'?'on-zanima':''}" onclick="setStatus('${b.id}','zanima')">⭐ Zanima</button>
+        <button class="sbtn ${s==='procitana'?'on-procitana':''}" onclick="setStatus('${b.id}','procitana')">📖 Pročitana</button>
+        <button class="sbtn ${s==='nisam'?'on-nisam':''}" onclick="setStatus('${b.id}','nisam')">✗ Ne</button>
+      </div>
+      <div class="card-note-area">${noteHTML}</div>
+      ${b.url?`<a class="card-link" href="${b.url}" target="_blank">🔗 Pogledaj na sajtu</a>`:''}
+    </div>
+  </div>
+</div>`;
+}
+
+// ═══════════════════════════════════════════
+// STATUS & NOTES
+// ═══════════════════════════════════════════
+async function setStatus(id, newStatus) {
+  const book = allBooks.find(b => b.id === id);
+  if (!book) return;
+  const status = book.status === newStatus ? '' : newStatus;
+  await api(`/books/${id}`, { method:'PUT', body: JSON.stringify({status}) });
+  await loadBooks();
+  await loadStats();
+}
+
+function startNote(id) {
+  editingNote = id;
+  renderBooks();
+  setTimeout(() => {
+    const ta = document.getElementById(`nta-${id}`);
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }, 30);
+}
+
+async function saveNote(id) {
+  const ta = document.getElementById(`nta-${id}`);
+  if (!ta) return;
+  const beleska = ta.value.trim();
+  await api(`/books/${id}`, { method:'PUT', body: JSON.stringify({beleska}) });
+  editingNote = null;
+  await loadBooks();
+}
+
+// ═══════════════════════════════════════════
+// ADD BOOK
+// ═══════════════════════════════════════════
+async function addBook() {
+  const naslov = document.getElementById('f-naslov').value.trim();
+  if (!naslov) { toast('Naslov je obavezan!'); return; }
+
+  const body = {
+    naslov,
+    autor: document.getElementById('f-autor').value.trim(),
+    oblast: document.getElementById('f-oblast').value,
+    godina: parseInt(document.getElementById('f-godina').value)||null,
+    strane: parseInt(document.getElementById('f-strane').value)||null,
+    cena_originalna: parseInt(document.getElementById('f-cena-orig').value)||null,
+    cena_snizena: parseInt(document.getElementById('f-cena-sniz').value)||null,
+    url: document.getElementById('f-url').value.trim(),
+    slika: document.getElementById('f-slika').value.trim(),
+    isbn: document.getElementById('f-isbn').value.trim(),
+    opis: document.getElementById('f-opis').value.trim(),
+    status: document.getElementById('f-status').value,
+    beleska: document.getElementById('f-beleska').value.trim(),
+  };
+
+  const res = await api('/books', { method:'POST', body: JSON.stringify(body) });
+  if (res && res.id) {
+    toast('✅ Knjiga dodana!');
+    clearForm();
+    await loadBooks();
+    await loadStats();
+    showView('sve');
+  } else {
+    toast('❌ Greška pri dodavanju');
+  }
+}
+
+function clearForm() {
+  ['f-naslov','f-autor','f-godina','f-strane','f-cena-orig','f-cena-sniz',
+   'f-url','f-slika','f-isbn','f-opis','f-beleska'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-status').value = '';
+}
+
+// ═══════════════════════════════════════════
+// AKCIJA CHECK
+// ═══════════════════════════════════════════
+function norm(s) {
+  return s.toLowerCase()
+    .replace(/[čć]/g,'c').replace(/š/g,'s').replace(/ž/g,'z')
+    .replace(/[^\w]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+async function runAkcija() {
+  const input = document.getElementById('akcija-ta').value.trim();
+  if (!input) return;
+
+  // Load ALL books for matching
+  const res = await api('/books');
+  const books = res?.books || [];
+
+  const lines = input.split('\n').map(l=>l.trim()).filter(Boolean);
+  const results = lines.map(line => {
+    const nLine = norm(line);
+    let matched = null;
+    for (const b of books) {
+      if (line.includes(b.url) || (b.url && b.url.split('/').pop() && line.includes(b.url.split('/').pop()))) {
+        matched = b; break;
+      }
+      const nTitle = norm(b.naslov);
+      if (nTitle.length > 5 && (nTitle.includes(nLine.slice(0,15)) || nLine.includes(nTitle.slice(0,15)))) {
+        matched = b; break;
+      }
+    }
+    return { query: line, book: matched };
+  });
+
+  const found = results.filter(r => r.book);
+  const nf = results.filter(r => !r.book);
+
+  const tagMap = {
+    imam:     ['tag-imam','✅ Imam'],
+    zanima:   ['tag-zanima','⭐ Zanima me'],
+    procitana:['tag-procitana','📖 Pročitana'],
+    nisam:    ['tag-nisam','✗ Nije za mene'],
+    '':       ['tag-novo','📌 U bazi, bez statusa'],
+  };
+
+  const html = `
+    <h3>Rezultati (${found.length}/${results.length} prepoznato)</h3>
+    ${found.map(r => {
+      const b = r.book;
+      const [tc, tl] = tagMap[b.status||''] || ['tag-novo','📌 Novo'];
+      const cena = b.cena_snizena || b.cena_originalna;
+      return `<div class="akcija-item">
+        <div class="ai-dot" style="background:${b.status==='imam'?'var(--green)':b.status==='zanima'?'var(--gold)':b.status==='procitana'?'var(--blue2)':'var(--text3)'}"></div>
+        <div class="ai-info">
+          <div class="ai-title">${b.naslov}</div>
+          <div class="ai-sub">${b.autor||''} · ${cena?cena.toLocaleString('sr')+' RSD':'—'}${b.akcija?' 🔥':''}</div>
+        </div>
+        <span class="ai-tag ${tc}">${tl}</span>
+      </div>`;
+    }).join('')}
+    ${nf.length ? `
+      <div style="margin-top:12px;padding:10px;background:#1a0f0f;border-radius:8px;font-size:.78rem;color:var(--red2)">
+        <strong>⚠️ Nije pronađeno (${nf.length}):</strong><br>
+        ${nf.map(r=>`• ${r.query}`).join('<br>')}
+      </div>` : ''}
+    <div class="akcija-summary">
+      Od <strong>${results.length}</strong> knjiga na akciji: 
+      ${Object.entries(found.reduce((acc,r)=>{const s=r.book.status||'bez';acc[s]=(acc[s]||0)+1;return acc},{}))
+        .map(([k,v])=>`<strong>${v}</strong> ${k==='imam'?'imam':k==='zanima'?'zanima me':k==='procitana'?'pročitana':k==='nisam'?'nije za mene':'bez statusa'}`)
+        .join(', ')}
+      ${nf.length?`, <strong>${nf.length}</strong> nije u bazi`:''}
+    </div>
+  `;
+
+  const el = document.getElementById('akcija-result');
+  el.innerHTML = html;
+  el.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════
+// SCRAPING
+// ═══════════════════════════════════════════
+function getCheckedAreas() {
+  const cbs = document.querySelectorAll('.area-cb:checked');
+  return [...cbs].map(cb => parseInt(cb.value));
+}
+
+function checkAllAreas(val) {
+  document.querySelectorAll('.area-cb').forEach(cb => cb.checked = val);
+}
+
+async function startScrape() {
+  const areaIds = getCheckedAreas();
+  if (!areaIds.length) { toast('Izaberi bar jednu oblast'); return; }
+
+  const res = await api('/scrape/start', {
+    method:'POST',
+    body: JSON.stringify({ areas: areaIds })
+  });
+  if (res?.error) { toast('❌ ' + res.error); return; }
+
+  document.getElementById('start-btn').style.display = 'none';
+  document.getElementById('stop-btn').style.display = '';
+  document.getElementById('scrape-progress').style.display = 'block';
+  document.getElementById('scrape-log').innerHTML = '';
+  toast('▶ Scraping pokrenut...');
+  pollScrapeStatus();
+}
+
+async function stopScrape() {
+  await api('/scrape/stop', { method:'POST' });
+  toast('⏹ Scraping zaustavljen');
+}
+
+async function quickScrape() {
+  const btn = document.getElementById('quick-scrape-btn');
+  if (btn.disabled) return;
+
+  const res = await api('/scrape/start', {
+    method:'POST',
+    body: JSON.stringify({ areas: null }) // sve oblasti
+  });
+  if (res?.error) { toast('❌ ' + res.error); return; }
+
+  btn.disabled = true;
+  document.getElementById('qs-icon').textContent = '⏳';
+  document.getElementById('qs-label').textContent = 'Scraping u toku...';
+  toast('▶ Scraping svih oblasti pokrenut...');
+  pollScrapeStatus();
+}
+
+async function checkScrapeStatus() {
+  const s = await api('/scrape/status');
+  if (s?.running) pollScrapeStatus();
+}
+
+function pollScrapeStatus() {
+  if (scrapeTimer) clearInterval(scrapeTimer);
+  scrapeTimer = setInterval(async () => {
+    const s = await api('/scrape/status');
+    if (!s) return;
+
+    // Update progress bar
+    const progEl = document.getElementById('scrape-progress');
+    const fillEl = document.getElementById('prog-fill');
+    const textEl = document.getElementById('prog-text');
+    const pctEl  = document.getElementById('prog-pct');
+    if (progEl) progEl.style.display = 'block';
+    if (fillEl) fillEl.style.width = s.progress + '%';
+    if (pctEl) pctEl.textContent = s.progress + '%';
+    if (textEl) textEl.textContent = s.current_area
+      ? `[${s.areas_done}/${s.areas_total}] ${s.current_area} — strana ${s.current_page}/${s.total_pages} — ${s.found} knjiga`
+      : 'Pokrećem...';
+
+    // Update log
+    const logEl = document.getElementById('scrape-log');
+    if (logEl && s.log?.length) {
+      const lastN = s.log.slice(-30);
+      logEl.innerHTML = lastN.map((l,i) =>
+        `<div class="log-line ${i===lastN.length-1?'new':''}">${l}</div>`
+      ).join('');
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Quick scrape button status
+    const qsIcon = document.getElementById('qs-icon');
+    const qsLabel = document.getElementById('qs-label');
+    const qsBtn = document.getElementById('quick-scrape-btn');
+    if (qsIcon) qsIcon.textContent = s.running ? '⏳' : '🔄';
+    if (qsLabel) qsLabel.textContent = s.running
+      ? `${s.areas_done}/${s.areas_total} oblasti...`
+      : 'Osveži sve knjige';
+    if (qsBtn) qsBtn.disabled = s.running;
+
+    if (!s.running) {
+      clearInterval(scrapeTimer);
+      scrapeTimer = null;
+      document.getElementById('start-btn').style.display = '';
+      document.getElementById('stop-btn').style.display = 'none';
+
+      if (s.error) {
+        toast('❌ Greška: ' + s.error);
+      } else if (s.progress === 100) {
+        toast(`✅ Scraping završen! ${s.found} knjiga pronađeno.`);
+        await loadBooks();
+        await loadStats();
+      }
+    }
+  }, 1500);
+}
+
+// ═══════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════
+function showView(name) {
+  currentView = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+  const bookViews = ['sve','imam','zanima','procitana','nisam'];
+  if (bookViews.includes(name)) {
+    document.getElementById('view-sve').classList.add('active');
+  } else {
+    document.getElementById('view-'+name)?.classList.add('active');
+  }
+  document.getElementById('nav-'+name)?.classList.add('active');
+  loadBooks();
+}
+
+// ═══════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════
+function exportCSV() {
+  window.open('/api/export/csv', '_blank');
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function toast(msg, dur=2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ═══════════════════════════════════════════
+// POPUST KOD
+// ═══════════════════════════════════════════
+let popustBooks = [];  // raw data from API
+let popustSelected = new Set();  // indices of checked books
+let popustKod = '';
+
+async function fetchPopust() {
+  const kod = document.getElementById('popust-kod-in').value.trim();
+  if (!kod) { toast('Unesi popust kod'); return; }
+
+  const errEl   = document.getElementById('popust-error');
+  const resEl   = document.getElementById('popust-results');
+  const spinner = document.getElementById('popust-spinner');
+  errEl.style.display = 'none';
+  resEl.style.display = 'none';
+  spinner.style.display = 'inline';
+
+  const res = await api('/popust', {
+    method: 'POST',
+    body: JSON.stringify({ kod })
+  });
+
+  spinner.style.display = 'none';
+
+  if (!res) {
+    errEl.textContent = '❌ Nije moguće kontaktirati server. Provjeri da li je server.py pokrenut.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (res.error) {
+    errEl.textContent = '❌ ' + res.error;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  popustKod = kod;
+  popustBooks = res.knjige || [];
+  popustSelected = new Set(popustBooks.map((_, i) => i)); // sve označene po defaultu
+  resEl.style.display = 'block';
+
+  document.getElementById('popust-title').textContent = `Kod: ${kod}`;
+  renderPopust();
+  toast(`✅ Pronađeno ${popustBooks.length} knjiga`);
+}
+
+function clearPopust() {
+  popustBooks = [];
+  popustSelected = new Set();
+  document.getElementById('popust-kod-in').value = '';
+  document.getElementById('popust-results').style.display = 'none';
+  document.getElementById('popust-error').style.display = 'none';
+  document.getElementById('js-gen-panel').style.display = 'none';
+}
+
+function renderPopust() {
+  const filter = document.getElementById('popust-filter').value;
+
+  let books = popustBooks;
+  if (filter === 'bez')  books = books.filter(b => !b.status);
+  else if (filter)       books = books.filter(b => b.status === filter);
+
+  document.getElementById('popust-count').textContent = books.length + ' knjiga';
+
+  const cnt = { imam:0, zanima:0, procitana:0, nisam:0, bez:0 };
+  popustBooks.forEach(b => {
+    if (b.status) cnt[b.status] = (cnt[b.status]||0) + 1;
+    else cnt.bez++;
+  });
+
+  const selectedBooks = popustBooks.filter((_,i) => popustSelected.has(i));
+  const ukupnoOrig = selectedBooks.reduce((s,b) => s + (b.cena_orig || 0), 0);
+  const inDb = popustBooks.filter(b => b.in_db).length;
+
+  document.getElementById('popust-stats').innerHTML = `
+    <span class="pstat pstat-total">📚 ${popustBooks.length} ukupno</span>
+    <span class="pstat" style="background:#1a2e1e;color:var(--green2);border:1px solid #253525">🔗 ${inDb} u bazi</span>
+    ${cnt.imam      ? `<span class="pstat pstat-imam">✅ ${cnt.imam} imam</span>` : ''}
+    ${cnt.zanima    ? `<span class="pstat pstat-zanima">⭐ ${cnt.zanima} zanima me</span>` : ''}
+    ${cnt.procitana ? `<span class="pstat pstat-procitana">📖 ${cnt.procitana} pročitana</span>` : ''}
+    ${cnt.bez       ? `<span class="pstat pstat-bez">⬜ ${cnt.bez} bez statusa</span>` : ''}
+    ${ukupnoOrig    ? `<span class="pstat" style="background:#1a2508;color:#8aba48;border:1px solid #2a3510">🛒 ${selectedBooks.length} označeno · ${ukupnoOrig.toLocaleString('sr')} RSD</span>` : ''}
+  `;
+
+  const container = document.getElementById('popust-books-list');
+  if (!books.length) {
+    container.innerHTML = '<div class="empty"><div class="e-icon">📭</div><p>Nema knjiga za ovaj filter.</p></div>';
+    return;
+  }
+
+  container.innerHTML = books.map(b => {
+    const idx = popustBooks.indexOf(b);
+    const checked = popustSelected.has(idx);
+    const sc  = b.status ? `s-${b.status}` : '';
+    const sel = checked ? 'selected' : '';
+    const s   = b.status || '';
+
+    const imgHTML = b.slika
+      ? `<img src="${b.slika}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'nc\\'>📗</div>'">`
+      : `<div class="nc">📗</div>`;
+
+    return `
+<div class="popust-book ${sc} ${sel}" id="pb-${idx}">
+  <input type="checkbox" class="pb-check" ${checked?'checked':''}
+    onchange="togglePopust(${idx}, this.checked)">
+  <div class="pb-cover">${imgHTML}</div>
+  <div class="pb-info">
+    <div class="pb-title">${b.naslov}</div>
+    <div class="pb-author">${b.autor || ''}</div>
+    <div class="pb-badges">
+      ${b.godina ? `<span class="badge b-year">${b.godina}</span>` : ''}
+      ${b.oblast ? `<span class="badge b-area">${b.oblast}</span>` : ''}
+      ${b.url    ? `<a href="${b.url}" target="_blank" class="badge" style="background:#0a1a10;color:#5a9a68;border:1px solid #1a3020;text-decoration:none">🔗 sajt</a>` : ''}
+      ${!b.in_db ? `<span class="badge" style="background:#1a1525;color:#9a8ac0;border:1px solid #2a2040">⚠️ nije u bazi</span>` : ''}
+    </div>
+  </div>
+  <div class="pb-right">
+    ${b.cena_orig ? `<div class="pb-price-kod">${b.cena_orig.toLocaleString('sr')} RSD</div>` : ''}
+    <div style="font-size:.62rem;color:var(--text3);margin-bottom:4px">ID: ${b.knjiga_id}</div>
+    <div class="pb-status-row">
+      <button class="sbtn ${s==='imam'?'on-imam':''}"           onclick="setPopustStatus(${idx},'imam')">✅</button>
+      <button class="sbtn ${s==='zanima'?'on-zanima':''}"       onclick="setPopustStatus(${idx},'zanima')">⭐</button>
+      <button class="sbtn ${s==='procitana'?'on-procitana':''}" onclick="setPopustStatus(${idx},'procitana')">📖</button>
+      <button class="sbtn ${s==='nisam'?'on-nisam':''}"         onclick="setPopustStatus(${idx},'nisam')">✗</button>
+    </div>
+  </div>
+</div>`;
+  }).join('');
+
+  updateJSGenerator();
+  document.getElementById('js-gen-panel').style.display = 'block';
+}
+
+function togglePopust(idx, checked) {
+  if (checked) popustSelected.add(idx);
+  else popustSelected.delete(idx);
+  const card = document.getElementById(`pb-${idx}`);
+  if (card) card.classList.toggle('selected', checked);
+  updateJSGenerator();
+}
+
+function selectAllPopust(val) {
+  if (val) popustBooks.forEach((_, i) => popustSelected.add(i));
+  else popustSelected.clear();
+  renderPopust();
+}
+
+async function setPopustStatus(idx, status) {
+  const b = popustBooks[idx];
+  if (!b) return;
+  b.status = b.status === status ? '' : status;
+  if (b.db_id) {
+    await api(`/books/${b.db_id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: b.status })
+    });
+  }
+  renderPopust();
+  await loadStats();
+}
+
+// ─── JS GENERATOR ───
+// Pošto znamo tačne knjiga_id vrednosti iz <select name="knjiga[]">,
+// skripta je trivijalna — samo selektujemo te opcije u multiselect-u.
+function updateJSGenerator() {
+  const selected = popustBooks.filter((_, i) => popustSelected.has(i));
+  if (!selected.length) {
+    document.getElementById('js-code-out').value = '// Nema označenih knjiga.';
+    return;
+  }
+
+  const ids    = selected.map(b => b.knjiga_id);
+  const naslovi = selected.map(b => `  // ${b.naslov}`).join('\n');
+
+  const js =
+`// =======================================================
+// Knjige Beležnica — Auto-odabir za popust kod: ${popustKod}
+// Generirano: ${new Date().toLocaleString('sr')}
+// Označenih knjiga: ${selected.length}
+// =======================================================
+// UPUTSTVO:
+//   1. Otvori https://kombib.rs/popust-kod.php
+//   2. Unesi kod "${popustKod}" i sačekaj da se učitaju knjige
+//   3. Pritisni F12 → Console tab → nalepi ovaj kod → Enter
+// =======================================================
+
+(function() {
+  // ID-ovi knjiga za automatski odabir:
+${naslovi}
+  const zeljenoIds = ${JSON.stringify(ids)};
+
+  const select = document.querySelector('select[name="knjiga[]"]');
+  if (!select) {
+    alert('❌ Nije pronađen <select> element.\\nProvjeri da si uneo kod i da su knjige učitane.');
+    return;
+  }
+
+  let oznaceno = 0;
+  let nijePronasao = [];
+
+  // Deselektuj sve prvo
+  Array.from(select.options).forEach(opt => { opt.selected = false; });
+
+  // Selektuj željene
+  zeljenoIds.forEach(id => {
+    const opt = select.querySelector(\`option[value="\${id}"]\`);
+    if (opt) {
+      opt.selected = true;
+      oznaceno++;
+      console.log('✅', opt.textContent.trim());
+    } else {
+      nijePronasao.push(id);
+      console.warn('⚠️ Nije pronađen ID:', id);
+    }
+  });
+
+  // Highlight selektovanih opcija
+  select.style.outline = '3px solid #e8b84b';
+
+  // Scroll do select elementa
+  select.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  const msg = \`✅ Označeno \${oznaceno} od ${selected.length} knjiga.\`
+    + (nijePronasao.length ? \`\\n⚠️ Nije pronađeno \${nijePronasao.length} knjiga (možda rasprodato).\` : '')
+    + '\\n\\nSada klikni "Naruči" dugme na stranici.';
+
+  console.log('\\n' + msg);
+  alert(msg);
+})();`;
+
+  document.getElementById('js-code-out').value = js;
+}
+
+function copyJS() {
+  const ta = document.getElementById('js-code-out');
+  ta.select();
+  document.execCommand('copy');
+  toast('📋 JavaScript kopiran u clipboard!');
+}
+
+// ═══════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
